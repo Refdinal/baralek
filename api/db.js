@@ -1,4 +1,4 @@
-const { Pool } = require('pg');
+const { Pool } = require("pg");
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
@@ -88,7 +88,7 @@ let memoryIdCounter = { guests: 5, rsvps: 4 };
 // ============================================================
 async function initDB() {
   if (!DATABASE_URL) {
-    console.log('[DB] No DATABASE_URL provided. Running with In-Memory store...');
+    console.log("[DB] No DATABASE_URL provided. Running with In-Memory store...");
     return;
   }
 
@@ -103,7 +103,7 @@ async function initDB() {
 
     // Test connection
     const client = await pool.connect();
-    console.log('[DB] Connected to Neon PostgreSQL successfully!');
+    console.log("[DB] Connected to Neon PostgreSQL successfully!");
     client.release();
     isConnectedToDB = true;
 
@@ -133,10 +133,10 @@ async function initDB() {
       );
     `);
 
-    console.log('[DB] Tables initialized successfully!');
+    console.log("[DB] Tables initialized successfully!");
   } catch (err) {
-    console.error('[DB] Connection Error:', err.message);
-    console.log('[DB] Falling back to In-Memory store...');
+    console.error("[DB] Connection Error:", err);
+    console.log("[DB] Falling back to In-Memory store...");
     isConnectedToDB = false;
   }
 }
@@ -145,12 +145,16 @@ async function initDB() {
 // HELPER: Generate slug from name
 // ============================================================
 function generateSlug(name) {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
-    .trim() + '-' + Math.random().toString(36).substring(2, 6);
+  return (
+    name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .trim() +
+    "-" +
+    Math.random().toString(36).substring(2, 6)
+  );
 }
 
 // ============================================================
@@ -158,7 +162,7 @@ function generateSlug(name) {
 // ============================================================
 async function getAllGuests() {
   if (isConnectedToDB) {
-    const result = await pool.query('SELECT * FROM guests ORDER BY created_at DESC');
+    const result = await pool.query("SELECT * FROM guests ORDER BY created_at DESC");
     return result.rows;
   }
   return [...memoryGuests].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -167,17 +171,22 @@ async function getAllGuests() {
 async function addGuest(name, phone) {
   const slug = generateSlug(name);
   if (isConnectedToDB) {
-    const result = await pool.query(
-      'INSERT INTO guests (name, phone, slug) VALUES ($1, $2, $3) RETURNING *',
-      [name, phone || null, slug]
-    );
+    const result = await pool.query("INSERT INTO guests (name, phone, slug) VALUES ($1, $2, $3) RETURNING *", [
+      name,
+      phone || null,
+      slug,
+    ]);
     return result.rows[0];
   }
   const newGuest = {
     id: memoryIdCounter.guests++,
-    name, phone: phone || null, slug,
-    status: 'pending',
-    created_at: new Date(), sent_at: null, opened_at: null,
+    name,
+    phone: phone || null,
+    slug,
+    status: "pending",
+    created_at: new Date(),
+    sent_at: null,
+    opened_at: null,
   };
   memoryGuests.push(newGuest);
   return newGuest;
@@ -185,19 +194,19 @@ async function addGuest(name, phone) {
 
 async function deleteGuest(id) {
   if (isConnectedToDB) {
-    await pool.query('DELETE FROM rsvps WHERE guest_id = $1', [id]);
-    const result = await pool.query('DELETE FROM guests WHERE id = $1 RETURNING *', [id]);
+    await pool.query("DELETE FROM rsvps WHERE guest_id = $1", [id]);
+    const result = await pool.query("DELETE FROM guests WHERE id = $1 RETURNING *", [id]);
     return result.rows[0];
   }
-  memoryRsvps = memoryRsvps.filter(r => r.guest_id !== id);
-  const idx = memoryGuests.findIndex(g => g.id === id);
+  memoryRsvps = memoryRsvps.filter((r) => r.guest_id !== id);
+  const idx = memoryGuests.findIndex((g) => g.id === id);
   if (idx === -1) return null;
   return memoryGuests.splice(idx, 1)[0];
 }
 
 async function updateGuestStatus(id, status, extraFields = {}) {
   if (isConnectedToDB) {
-    let setClauses = ['status = $2'];
+    let setClauses = ["status = $2"];
     let params = [id, status];
     let paramIdx = 3;
     for (const [key, val] of Object.entries(extraFields)) {
@@ -205,13 +214,10 @@ async function updateGuestStatus(id, status, extraFields = {}) {
       params.push(val);
       paramIdx++;
     }
-    const result = await pool.query(
-      `UPDATE guests SET ${setClauses.join(', ')} WHERE id = $1 RETURNING *`,
-      params
-    );
+    const result = await pool.query(`UPDATE guests SET ${setClauses.join(", ")} WHERE id = $1 RETURNING *`, params);
     return result.rows[0];
   }
-  const guest = memoryGuests.find(g => g.id === id);
+  const guest = memoryGuests.find((g) => g.id === id);
   if (!guest) return null;
   guest.status = status;
   Object.assign(guest, extraFields);
@@ -220,18 +226,18 @@ async function updateGuestStatus(id, status, extraFields = {}) {
 
 async function getGuestBySlug(slug) {
   if (isConnectedToDB) {
-    const result = await pool.query('SELECT * FROM guests WHERE slug = $1', [slug]);
+    const result = await pool.query("SELECT * FROM guests WHERE slug = $1", [slug]);
     return result.rows[0] || null;
   }
-  return memoryGuests.find(g => g.slug === slug) || null;
+  return memoryGuests.find((g) => g.slug === slug) || null;
 }
 
 async function getGuestById(id) {
   if (isConnectedToDB) {
-    const result = await pool.query('SELECT * FROM guests WHERE id = $1', [id]);
+    const result = await pool.query("SELECT * FROM guests WHERE id = $1", [id]);
     return result.rows[0] || null;
   }
-  return memoryGuests.find(g => g.id === id) || null;
+  return memoryGuests.find((g) => g.id === id) || null;
 }
 
 // ============================================================
@@ -239,7 +245,7 @@ async function getGuestById(id) {
 // ============================================================
 async function getAllRsvps() {
   if (isConnectedToDB) {
-    const result = await pool.query('SELECT * FROM rsvps ORDER BY created_at DESC');
+    const result = await pool.query("SELECT * FROM rsvps ORDER BY created_at DESC");
     return result.rows;
   }
   return [...memoryRsvps].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -248,15 +254,18 @@ async function getAllRsvps() {
 async function addRsvp(guestId, name, presence, guestsCount, wish) {
   if (isConnectedToDB) {
     const result = await pool.query(
-      'INSERT INTO rsvps (guest_id, name, presence, guests_count, wish) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [guestId || null, name, presence, guestsCount, wish]
+      "INSERT INTO rsvps (guest_id, name, presence, guests_count, wish) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+      [guestId || null, name, presence, guestsCount, wish],
     );
     return result.rows[0];
   }
   const newRsvp = {
     id: memoryIdCounter.rsvps++,
     guest_id: guestId || null,
-    name, presence, guests_count: guestsCount, wish,
+    name,
+    presence,
+    guests_count: guestsCount,
+    wish,
     created_at: new Date(),
   };
   memoryRsvps.push(newRsvp);
@@ -271,13 +280,13 @@ async function getDashboardStats() {
   const rsvps = await getAllRsvps();
 
   const totalGuests = guests.length;
-  const sent = guests.filter(g => ['sent', 'opened', 'responded'].includes(g.status)).length;
-  const opened = guests.filter(g => ['opened', 'responded'].includes(g.status)).length;
-  const responded = guests.filter(g => g.status === 'responded').length;
-  const pending = guests.filter(g => g.status === 'pending').length;
+  const sent = guests.filter((g) => ["sent", "opened", "responded"].includes(g.status)).length;
+  const opened = guests.filter((g) => ["opened", "responded"].includes(g.status)).length;
+  const responded = guests.filter((g) => g.status === "responded").length;
+  const pending = guests.filter((g) => g.status === "pending").length;
 
-  const hadir = rsvps.filter(r => r.presence === 'Hadir');
-  const berhalangan = rsvps.filter(r => r.presence === 'Berhalangan');
+  const hadir = rsvps.filter((r) => r.presence === "Hadir");
+  const berhalangan = rsvps.filter((r) => r.presence === "Berhalangan");
   const totalPax = hadir.reduce((sum, r) => sum + (r.guests_count || 0), 0);
 
   return {
