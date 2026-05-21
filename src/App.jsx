@@ -6,6 +6,8 @@ import Event from './components/Event';
 import Gallery from './components/Gallery';
 import Gift from './components/Gift';
 import RSVP from './components/RSVP';
+import Dashboard from './components/Dashboard';
+import GuestView from './components/GuestView';
 
 // Falling Petals Animation Component
 const PetalsBackground = () => {
@@ -47,6 +49,8 @@ export default function App() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [wishes, setWishes] = useState([]);
   const [loadingWishes, setLoadingWishes] = useState(true);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [guestSlug, setGuestSlug] = useState(null);
 
   // Ambil ucapan tamu dari API Express
   const fetchWishes = async () => {
@@ -112,19 +116,44 @@ export default function App() {
 
   return (
     <div className="app-container">
-      {/* 1. Cover Overlay Screen */}
-      <Cover onOpen={handleOpen} isUnlocked={isUnlocked} />
+      {/* Guest View Mode */}
+      {guestSlug ? (
+        <GuestView />
+      ) : (
+        /* Dashboard Mode */
+        showDashboard ? (
+          <Dashboard />
+        ) : (
+          <>
+            {/* 1. Cover Overlay Screen */}
+            <Cover onOpen={handleOpen} isUnlocked={isUnlocked} />
 
-      {/* 2. Floating Music Player */}
-      {isUnlocked && (
-        <MusicPlayer isPlaying={isPlaying} togglePlay={togglePlay} />
-      )}
+            {/* 2. Floating Music Player */}
+            {isUnlocked && (
+              <MusicPlayer isPlaying={isPlaying} togglePlay={togglePlay} />
+            )}
 
-      {/* 3. Floating Petals Effect (Only shows after unlocked) */}
-      {isUnlocked && <PetalsBackground />}
+            {/* 3. Floating Petals Effect (Only shows after unlocked) */}
+            {isUnlocked && <PetalsBackground />}
 
-      {/* 4. Main Invitation Content */}
-      <div className={`main-content ${isUnlocked ? 'active' : ''}`}>
+            {/* 4. Main Invitation Content */}
+            <div className={`main-content ${isUnlocked ? 'active' : ''}`}>
+              
+              {/* Admin Dashboard Link (only visible in development) */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="admin-link">
+                  <a 
+                    href="/?dashboard=true" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      setShowDashboard(true);
+                    }}
+                    className="dashboard-link"
+                  >
+                    📊 Admin Dashboard
+                  </a>
+                </div>
+              )}
         
         {/* Header / Intro Hero */}
         <header className="hero-header">
@@ -291,6 +320,35 @@ export default function App() {
           }
         }
       `}</style>
+      
+      {/* Admin Link Styling */}
+      <style jsx="true">{`
+        .admin-link {
+          position: fixed;
+          top: 20px;
+          right: 20px;
+          z-index: 1000;
+        }
+        
+        .dashboard-link {
+          background: rgba(231, 76, 60, 0.9);
+          color: white;
+          padding: 8px 12px;
+          border-radius: 6px;
+          text-decoration: none;
+          font-size: 0.875rem;
+          font-weight: 500;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+          transition: all 0.2s ease;
+        }
+        
+        .dashboard-link:hover {
+          background: rgba(192, 57, 43, 0.9);
+          transform: translateY(-1px);
+        }
+      `}</style>
+      </>
+    )}
     </div>
   );
 }
