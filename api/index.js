@@ -12,7 +12,11 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // Initialize database connection
-await db.initDB();
+async function ensureDB(req, res, next) {
+  await db.initDB();
+  next();
+}
+app.use(ensureDB);
 
 // API Endpoints
 app.get("/api/health", (req, res) => {
