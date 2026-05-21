@@ -56,7 +56,7 @@ export default function App() {
   const fetchWishes = async () => {
     setLoadingWishes(true);
     try {
-      const response = await fetch("/api/wishes");
+      const response = await fetch("/api/rsvps");
       if (response.ok) {
         const data = await response.json();
         setWishes(data);
